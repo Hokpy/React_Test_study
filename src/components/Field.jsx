@@ -1,5 +1,5 @@
 const Field = (props) => {
-  const { className = '', id, label, type = 'text' } = props
+  const { className = '', id, label, type = 'text', onInput } = props
   return (
     <div className={`field ${className}`}>
       <label
@@ -14,6 +14,7 @@ const Field = (props) => {
         placeholder=" "
         autoComplete="off"
         type={type}
+        onInput={onInput}
       />
     </div>
   )
