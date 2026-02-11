@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import AddTaskForm from './AddTaskForm'
+import Button from './Button'
 import SearchTaskForm from './SearchTaskForm'
 import TodoInfo from './TodoInfo'
 import TodoList from './TodoLIst'
@@ -22,6 +23,12 @@ const Todo = () => {
   const [newTaskTitle, setNewTaskTitle] = useState('')
 
   const [searchQuery, setSearchQuery] = useState('')
+
+  const newTaskInputRef = useRef(null)
+
+  const firtsUnCompleteTaskRef = useRef(null)
+
+  const firtsUnCompleteTaskId = tasks.find(({ isDone }) => !isDone)?.id
 
   const deleteAllTasks = () => {
     const isConfirmed = confirm('Are u sure want to delete this all task')
@@ -57,12 +64,17 @@ const Todo = () => {
       setTasks([...tasks, newTask])
       setNewTaskTitle('')
       setSearchQuery('')
+      newTaskInputRef.current.focus()
     }
   }
 
   useEffect(() => {
     localStorage.setItem('tasks', JSON.stringify(tasks))
   }, [tasks])
+
+  useEffect(() => {
+    newTaskInputRef.current.focus()
+  }, [])
 
   const cleanSearchQuery = searchQuery.trim().toLowerCase()
 
@@ -80,6 +92,7 @@ const Todo = () => {
         addTask={addTask}
         newTaskTitle={newTaskTitle}
         setNewTaskTitle={setNewTaskTitle}
+        newTaskInputRef={newTaskInputRef}
       />
       <SearchTaskForm
         searchQuery={searchQuery}
@@ -90,9 +103,20 @@ const Todo = () => {
         done={tasks.filter(({ isDone }) => isDone).length}
         onDeleteAllButtonClick={deleteAllTasks}
       />
+      <Button
+        onClick={() =>
+          firtsUnCompleteTaskRef.current?.scrollIntoView({
+            behavior: 'smooth',
+          })
+        }
+      >
+        Show first uncomplete task
+      </Button>
       <TodoList
         tasks={tasks}
         filteredTasks={filteredTasks}
+        firtsUnCompleteTaskRef={firtsUnCompleteTaskRef}
+        firtsUnCompleteTaskId={firtsUnCompleteTaskId}
         onDeleteTaskButtonClick={deleteTask}
         onTaskCompleteChange={toggleTaskComplete}
       />
