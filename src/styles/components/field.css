@@ -32,6 +32,10 @@
     border-color: var(--color-dark-2);
   }
 
+  &.is-invalid {
+    border-color: red;
+  }
+
   &:focus {
     background-color: var(--color-gray-1);
     outline: none;
@@ -48,4 +52,16 @@
       background-repeat: no-repeat;
     }
   }
+}
+
+.field__error {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  font-size: 12px;
+  color: red;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 100%;
 }
