@@ -1,11 +1,13 @@
 import { useRef } from 'react'
 
-const useUnCompleteTaskScroll = (tasks) => {
-  const firtsUnCompleteTaskRef = useRef(null)
+const useIncompleteTaskScroll = (tasks) => {
+  const firstIncompleteTaskRef = useRef(null)
+  const firstIncompleteTaskId = tasks.find(({ isDone }) => !isDone)?.id
 
-  const firtsUnCompleteTaskId = tasks.find(({ isDone }) => !isDone)?.id
-
-  return { firtsUnCompleteTaskId, firtsUnCompleteTaskRef }
+  return {
+    firstIncompleteTaskRef,
+    firstIncompleteTaskId,
+  }
 }
 
-export default useUnCompleteTaskScroll
+export default useIncompleteTaskScroll
