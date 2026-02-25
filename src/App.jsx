@@ -1,5 +1,5 @@
 import TaskPage from './pages/TaskPage'
-import Router from './Router'
+import Router from './Router/'
 import TasksPage from './pages/TasksPage'
 
 const App = () => {
