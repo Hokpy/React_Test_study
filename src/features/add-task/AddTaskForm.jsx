@@ -6,8 +6,9 @@ import Field from '@/shared/ui/Field'
 
 const AddTaskForm = (props) => {
   const { styles } = props
-  const { addTask, newTaskTitle, setNewTaskTitle, newTaskInputRef } =
-    useContext(TasksContext)
+  const { addTask, newTaskInputRef } = useContext(TasksContext)
+
+  const [newTaskTitle, setNewTaskTitle] = useState('')
 
   const clearTaskTitle = newTaskTitle.trim()
   const isNewTaskTitleEmpty = clearTaskTitle.length === 0
@@ -17,7 +18,9 @@ const AddTaskForm = (props) => {
   const onSubmit = (event) => {
     event.preventDefault()
     if (!isNewTaskTitleEmpty) {
-      addTask(clearTaskTitle)
+      addTask(clearTaskTitle, () => {
+        setNewTaskTitle('')
+      })
     }
   }
 
