@@ -1,0 +1,23 @@
+// Конфигурация генератора клиента
+generator client {
+  provider = "prisma-client-js"
+  engineType = "binary"  // <-- Add this
+}
+
+// Источник данных — MySQL
+datasource db {
+  provider = "mysql"
+}
+
+model Task {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?  @db.Text
+  completed   Boolean  @default(false)
+  priority    String   @default("medium") // low | medium | high
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("tasks")
+}
+
