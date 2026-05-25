@@ -1,4 +1,4 @@
-const URL = 'http://localhost:3001/tasks'
+const URL = 'http://localhost:3001/api/tasks'
 
 const headers = {
   'Content-Type': 'application/json',
@@ -29,11 +29,11 @@ const tasksAPI = {
     return Promise.all(tasks.map(({ id }) => tasksAPI.delete(id)))
   },
 
-  toggleComplete: (id, isDone) => {
+  toggleComplete: (id, completed) => {
     return fetch(`${URL}/${id}`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers,
-      body: JSON.stringify({ isDone }),
+      body: JSON.stringify({ completed }),
     })
   },
 }

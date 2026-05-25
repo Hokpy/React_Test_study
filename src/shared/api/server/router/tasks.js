@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { prisma } from '../prisma.js'
+import { Prisma } from '@prisma/client'
 
 const router = Router()
 
@@ -25,11 +26,14 @@ router.get('/', async (req, res) => {
 
 // GET /api/tasks/:id — одна задача
 router.get('/:id', async (req, res) => {
-  const id = parseInt(req.params.id)
-  const task = await prisma.task.findUnique({ where: { id } })
-
-  if (!task) return res.status(404).json({ error: 'Задача не найдена' })
-  res.json(task)
+  try {
+    const id = parseInt(req.params.id)
+    const task = await prisma.task.findUnique({ where: { id } })
+    if (!task) return res.status(404).json({ error: 'Задача не найдена' })
+    res.json(task)
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка сервера', details: err.message })
+  }
 })
 
 // POST /api/tasks — создать задачу
@@ -62,15 +66,25 @@ router.put('/:id', async (req, res) => {
     })
     res.json(task)
   } catch (err) {
-    res.status(404).json({ error: 'Задача не найдена' })
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === 'P2025'
+    ) {
+      return res.status(404).json({ error: 'Задача не найдена' })
+    }
+    res.status(500).json({ error: 'Ошибка сервера', details: err.message })
   }
 })
 
 // DELETE /api/tasks/:id — удалить задачу
 router.delete('/:id', async (req, res) => {
-  const id = parseInt(req.params.id)
-  await prisma.task.delete({ where: { id } })
-  res.status(204).send()
+  try {
+    const id = parseInt(req.params.id)
+    await prisma.task.delete({ where: { id } })
+    res.status(204).send()
+  } catch (err) {
+    res.status(500).json({ error: 'Ошибка сервера', details: err.message })
+  }
 })
 
 export default router

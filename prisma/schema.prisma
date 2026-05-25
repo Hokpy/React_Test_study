@@ -1,7 +1,6 @@
 // Конфигурация генератора клиента
 generator client {
   provider = "prisma-client-js"
-  engineType = "binary"  // <-- Add this
 }
 
 // Источник данных — MySQL
