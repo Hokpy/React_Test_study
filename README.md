@@ -1,12 +1,393 @@
-# React + Vite
+# React Test Study
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+- [О проекте](#о-проекте)
+- [Стек технологий](#стек-технологий)
+- [Архитектура](#архитектура)
+  - [Системная архитектура](#системная-архитектура)
+  - [Feature-Sliced Design](#feature-sliced-design)
+- [Структура проекта](#структура-проекта)
+- [Требования](#требования)
+- [Установка и запуск](#установка-и-запуск)
+  - [1. Клонирование репозитория](#1-клонирование-репозитория)
+  - [2. Установка зависимостей](#2-установка-зависимостей)
+  - [3. Настройка переменных окружения](#3-настройка-переменных-окружения)
+  - [4. Запуск базы данных](#4-запуск-базы-данных)
+  - [5. Миграции Prisma](#5-миграции-prisma)
+  - [6. Запуск проекта](#6-запуск-проекта)
+- [Скрипты](#скрипты)
+- [API](#api)
+- [Переменные окружения](#переменные-окружения)
+- [База данных](#база-данных)
+- [Разработка](#разработка)
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## О проекте
 
-## Expanding the ESLint configuration
+Todo-приложение с возможностью создания, поиска и просмотра задач. Проект создан
+в учебных целях для практики работы с современным фронтенд- и бэкенд-стеком.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+**Что реализовано:**
+
+- Просмотр списка задач и отдельной задачи (страницы `TasksPage` / `TaskPage`)
+- Создание новой задачи (`add-task`)
+- Поиск по задачам (`search-task`)
+- Статистика по задачам (`stats`)
+- REST API на Express с хранением данных в MySQL через Prisma ORM
+- Архитектура по методологии Feature-Sliced Design
+
+---
+
+## Стек технологий
+
+### Клиент
+
+| Технология                          | Версия | Назначение             |
+| ----------------------------------- | ------ | ---------------------- |
+| [React](https://react.dev/)         | 19     | UI-библиотека          |
+| [Vite](https://vitejs.dev/)         | 7      | Сборщик и dev-сервер   |
+| [Sass/SCSS](https://sass-lang.com/) | 1.97   | Стилизация компонентов |
+
+### Сервер
+
+| Технология                                                                         | Версия | Назначение                |
+| ---------------------------------------------------------------------------------- | ------ | ------------------------- |
+| [Express](https://expressjs.com/)                                                  | 5      | HTTP-сервер и роутинг     |
+| [Prisma ORM](https://www.prisma.io/)                                               | 7      | Работа с базой данных     |
+| [@prisma/adapter-mariadb](https://www.prisma.io/docs/orm/overview/databases/mysql) | 7.8    | Адаптер для MySQL/MariaDB |
+| [dotenv](https://github.com/motdotla/dotenv)                                       | 17     | Переменные окружения      |
+| [cors](https://github.com/expressjs/cors)                                          | 2.8    | CORS-заголовки            |
+
+### Инструменты разработки
+
+| Инструмент                                                     | Назначение                            |
+| -------------------------------------------------------------- | ------------------------------------- |
+| [nodemon](https://nodemon.io/)                                 | Hot-reload сервера при разработке     |
+| [concurrently](https://github.com/open-cli-tools/concurrently) | Параллельный запуск клиента и сервера |
+| [ESLint](https://eslint.org/)                                  | Линтер JavaScript/JSX                 |
+| [json-server](https://github.com/typicode/json-server)         | Мок-сервер (для отладки без бэкенда)  |
+
+---
+
+## Архитектура
+
+### Системная архитектура
+
+Проект разделён на два независимых слоя, взаимодействующих через HTTP:
+
+```
+┌─────────────────────────┐       ┌──────────────────────────┐       ┌───────────┐
+│   React SPA             │       │   Express API Server     │       │   MySQL   │
+│   Vite :5173            │       │   :3001                  │       │   :3306   │
+│                         │       │                          │       │           │
+│  Widgets / Pages  ──────┼─/api─►│  Routes (src/shared/api) │──────►│  Prisma   │
+│  Features               │◄──────┤  Prisma Client singleton │◄──────│  Migrate  │
+│  Entities               │       │                          │       │           │
+│  Shared                 │       │                          │       │           │
+└─────────────────────────┘       └──────────────────────────┘       └───────────┘
+```
+
+> **Важно:** `PrismaClient` и `DATABASE_URL` никогда не попадают в браузерный
+> бандл — они существуют исключительно в серверном коде
+> (`src/shared/api/server/`).
+
+### Feature-Sliced Design
+
+Клиентская часть организована по методологии
+[Feature-Sliced Design](https://feature-sliced.design/). Код делится на слои с
+чёткими правилами зависимостей: каждый слой может импортировать только из слоёв
+**ниже** себя.
+
+```
+app        ← инициализация, роутинг, глобальные стили
+   ↑
+widgets    ← композиция фич и сущностей в блоки страниц
+   ↑
+pages      ← страницы приложения (маршруты)
+   ↑
+features   ← пользовательские сценарии (add-task, search-task, stats)
+   ↑
+entities   ← бизнес-сущности (todo: model + ui)
+   ↑
+shared     ← переиспользуемый код (api, ui-kit, hooks, иконки)
+```
+
+---
+
+## Структура проекта
+
+```
+React_Test_study/
+│
+├── prisma/
+│   ├── schema.prisma          # Схема базы данных (модели)
+│   └── migrations/            # История SQL-миграций
+│
+├── src/
+│   ├── app/                   # [FSD] Слой app — инициализация приложения
+│   │   ├── routing/
+│   │   │   ├── Router.jsx     # Конфигурация маршрутов
+│   │   │   └── index.js
+│   │   ├── styles/            # Глобальные стили
+│   │   ├── App.jsx            # Корневой компонент
+│   │   └── index.js
+│   │
+│   ├── entities/              # [FSD] Слой entities — бизнес-сущности
+│   │   └── todo/
+│   │       ├── model/         # Стейт, типы, бизнес-логика задачи
+│   │       ├── ui/            # UI-компоненты сущности Todo
+│   │       └── index.js       # Публичное API сущности
+│   │
+│   ├── features/              # [FSD] Слой features — пользовательские сценарии
+│   │   ├── add-task/          # Создание новой задачи
+│   │   ├── search-task/       # Поиск по задачам
+│   │   └── stats/             # Статистика задач
+│   │
+│   ├── pages/                 # [FSD] Слой pages — страницы приложения
+│   │   ├── TaskPage/          # Страница одной задачи
+│   │   └── TasksPage/         # Страница списка задач
+│   │
+│   ├── shared/                # [FSD] Слой shared — общий переиспользуемый код
+│   │   ├── api/
+│   │   │   └── server/        # Express-сервер (серверный код)
+│   │   │       └── index.js   # Точка входа сервера
+│   │   ├── assets/icons/      # SVG-иконки
+│   │   ├── hooks/             # Общие React-хуки
+│   │   └── ui/                # Общие UI-компоненты (кнопки, инпуты и т.д.)
+│   │
+│   ├── widgets/               # [FSD] Слой widgets — крупные блоки интерфейса
+│   │   └── Todo/              # Виджет списка Todo
+│   │
+│   └── main.jsx               # Точка входа React-приложения
+│
+├── .env                       # Переменные окружения (не в git!)
+├── .env.example               # Пример переменных окружения
+├── .gitignore
+├── docker-compose.yml         # Docker-конфигурация для MySQL
+├── eslint.config.js
+├── index.html
+├── package.json
+├── prisma.config.ts           # Конфигурация Prisma 7 (datasource url)
+├── tsconfig.json
+└── vite.config.js
+```
+
+---
+
+## Требования
+
+Перед установкой убедитесь, что у вас установлено:
+
+- **Node.js** — версия 18 или выше ([скачать](https://nodejs.org/))
+- **npm** — версия 9 или выше (идёт вместе с Node.js)
+- **MySQL 8** или **MariaDB 10.6+** — локально или через Docker
+
+Для запуска MySQL через Docker дополнительно потребуется:
+
+- **Docker** и **Docker Compose** ([скачать](https://www.docker.com/))
+
+---
+
+## Установка и запуск
+
+### 1. Клонирование репозитория
+
+```bash
+git clone https://github.com/Hokpy/React_Test_study.git
+cd React_Test_study
+```
+
+### 2. Установка зависимостей
+
+```bash
+npm install
+```
+
+### 3. Настройка переменных окружения
+
+Скопируйте файл с примером и заполните своими данными:
+
+```bash
+cp .env.example .env
+```
+
+Отредактируйте `.env`:
+
+```env
+DATABASE_URL="mysql://appuser:apppass123@localhost:3306/react_study"
+PORT=3001
+NODE_ENV=development
+```
+
+### 4. Запуск базы данных
+
+**Через Docker (рекомендуется)** — `docker-compose.yml` :
+
+```bash
+docker compose up -d
+```
+
+**Локальный MySQL** — выполните в MySQL CLI (`mysql -u root -p`):
+
+```sql
+CREATE DATABASE react_study CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'appuser'@'localhost' IDENTIFIED BY 'apppass123';
+GRANT ALL PRIVILEGES ON react_study.* TO 'appuser'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+### 5. Миграции Prisma
+
+Создайте таблицы в базе данных:
+
+```bash
+npm run db:migrate
+```
+
+### 6. Запуск проекта
+
+```bash
+npm run dev:all
+```
+
+После запуска будут доступны:
+
+| Сервис           | URL                                             |
+| ---------------- | ----------------------------------------------- |
+| React-приложение | http://localhost:5173                           |
+| Express API      | http://localhost:3001                           |
+| Prisma Studio    | http://localhost:5555 (при `npm run db:studio`) |
+
+---
+
+## Скрипты
+
+| Команда               | Описание                                                |
+| --------------------- | ------------------------------------------------------- |
+| `npm run dev`         | Запуск Vite dev-сервера (только фронтенд)               |
+| `npm run server`      | Запуск Express-сервера через nodemon                    |
+| `npm run dev:all`     | Запуск фронтенда и бэкенда одновременно                 |
+| `npm run build`       | Сборка продакшен-бандла                                 |
+| `npm run preview`     | Превью продакшен-сборки                                 |
+| `npm run lint`        | Проверка кода ESLint                                    |
+| `npm run db:migrate`  | Создать и применить новую миграцию                      |
+| `npm run db:push`     | Синхронизировать схему с БД без миграции _(только dev)_ |
+| `npm run db:generate` | Перегенерировать Prisma Client после изменений схемы    |
+| `npm run db:studio`   | Открыть визуальный редактор базы данных                 |
+
+---
+
+## API
+
+Все эндпоинты доступны по базовому адресу `http://localhost:3001/api`.
+
+### Задачи `/api/tasks`
+
+| Метод    | Путь             | Описание                   |
+| -------- | ---------------- | -------------------------- |
+| `GET`    | `/api/tasks`     | Получить список всех задач |
+| `GET`    | `/api/tasks/:id` | Получить задачу по ID      |
+| `POST`   | `/api/tasks`     | Создать новую задачу       |
+| `PUT`    | `/api/tasks/:id` | Обновить задачу            |
+| `DELETE` | `/api/tasks/:id` | Удалить задачу             |
+
+**Пример — создание задачи:**
+
+```bash
+curl -X POST http://localhost:3001/api/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Изучить Prisma", "body": "Пройти документацию по Prisma ORM"}'
+```
+
+**Пример ответа:**
+
+```json
+{
+  "id": 1,
+  "title": "Изучить Prisma",
+  "body": "Пройти документацию по Prisma ORM",
+  "published": false,
+  "createdAt": "2026-01-01T00:00:00.000Z"
+}
+```
+
+---
+
+## Переменные окружения
+
+Создайте файл `.env` в корне проекта на основе `.env.example`:
+
+| Переменная     | Пример                                | Описание                                     |
+| -------------- | ------------------------------------- | -------------------------------------------- |
+| `DATABASE_URL` | `mysql://user:pass@localhost:3306/db` | Строка подключения к MySQL                   |
+| `PORT`         | `3001`                                | Порт Express-сервера                         |
+| `NODE_ENV`     | `development`                         | Режим запуска (`development` / `production`) |
+
+> **Безопасность:** `.env` добавлен в `.gitignore` и никогда не должен попадать
+> в репозиторий. Используйте `.env.example` для документирования нужных
+> переменных без реальных значений.
+
+---
+
+## База данных
+
+Проект использует **Prisma ORM 7** с адаптером для MySQL/MariaDB. Конфигурация
+подключения находится в `prisma.config.ts` (особенность Prisma 7 — `url` вынесен
+из `schema.prisma`).
+
+### Управление схемой
+
+```bash
+# Создать новую миграцию (после изменений schema.prisma):
+npm run db:migrate
+
+# Быстрая синхронизация без создания файла миграции (только dev!):
+npm run db:push
+
+# Перегенерировать клиент без миграции:
+npm run db:generate
+```
+
+### Просмотр данных
+
+Prisma Studio — веб-интерфейс для просмотра и ручного редактирования данных:
+
+```bash
+npm run db:studio
+# Откроет http://localhost:5555
+```
+
+### Коды ошибок Prisma
+
+| Код     | Ситуация                                                   |
+| ------- | ---------------------------------------------------------- |
+| `P2002` | Нарушение уникального ограничения (дублирующееся значение) |
+| `P2025` | Запись не найдена                                          |
+| `P2003` | Нарушение внешнего ключа                                   |
+| `P1001` | Не удалось подключиться к базе данных                      |
+
+---
+
+## Разработка
+
+### Добавление новой фичи (FSD)
+
+1. Создайте папку в `src/features/название-фичи/`
+2. Добавьте `ui/`, `model/` (если нужен стейт) и `index.js` (публичное API)
+3. Импортируйте фичу в нужный виджет или страницу — но не наоборот
+
+### Добавление новой модели в БД
+
+1. Добавьте модель в `prisma/schema.prisma`
+2. Создайте миграцию: `npm run db:migrate`
+3. Добавьте роут в `src/shared/api/server/`
+4. Создайте API-функции в слое `shared/api/` для вызова из компонентов
+
+### Линтинг
+
+```bash
+npm run lint
+```
+
+Конфигурация ESLint — в `eslint.config.js`. Используются плагины
+`eslint-plugin-react-hooks` и `eslint-plugin-react-refresh`.
