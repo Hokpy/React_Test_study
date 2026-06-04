@@ -11,6 +11,16 @@ const PORT = process.env.PORT || 3001
 app.use(cors({ origin: 'http://localhost:5173' }))
 app.use(express.json())
 
+// ✅ FIX: CSP — ставим ПОСЛЕ всех middleware, удаляем старый заголовок перед установкой нового
+app.use((req, res, next) => {
+  res.removeHeader('Content-Security-Policy')
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: http://localhost:3001; connect-src 'self' http://localhost:3001 http://localhost:5173",
+  )
+  next()
+})
+
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 

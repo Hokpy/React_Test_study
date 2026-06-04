@@ -23,7 +23,7 @@ export const TasksProvider = (props) => {
     apearingTaskId,
   } = useTasks()
 
-  const { firtsUnCompleteTaskId, firtsUnCompleteTaskRef } =
+  const { firstIncompleteTaskId, firstIncompleteTaskRef } =
     useUnCompleteTaskScroll(tasks)
 
   const value = useMemo(
@@ -40,8 +40,8 @@ export const TasksProvider = (props) => {
       addTask,
       disapearingTaskId,
       apearingTaskId,
-      firtsUnCompleteTaskId,
-      firtsUnCompleteTaskRef,
+      firtsUnCompleteTaskId: firstIncompleteTaskId,
+      firtsUnCompleteTaskRef: firstIncompleteTaskRef,
     }),
     [
       tasks,
@@ -56,8 +56,8 @@ export const TasksProvider = (props) => {
       addTask,
       disapearingTaskId,
       apearingTaskId,
-      firtsUnCompleteTaskId,
-      firtsUnCompleteTaskRef,
+      firstIncompleteTaskId,
+      firstIncompleteTaskRef,
     ],
   )
 

@@ -5,9 +5,10 @@ const headers = {
 }
 
 const tasksAPI = {
-  getAll: () => {
-    return fetch(URL).then((response) => response.json())
-  },
+  getAll: () =>
+    fetch(URL)
+      .then((response) => response.json())
+      .then((res) => res.data),
 
   getById: (id) => {
     return fetch(`${URL}/${id}`).then((response) => response.json())

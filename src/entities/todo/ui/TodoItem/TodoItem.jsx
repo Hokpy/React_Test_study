@@ -40,6 +40,7 @@ const TodoItem = (props) => {
         {title}
       </label>
       <RouterLink
+        className={styles.link}
         to={`/tasks/${id}`}
         aria-label="Task detail Page"
       >

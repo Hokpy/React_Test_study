@@ -90,7 +90,9 @@ const useTasks = () => {
   useEffect(() => {
     newTaskInputRef.current.focus()
 
-    tasksAPI.getAll().then((severTasks) => dispatch({ type: 'SET_ALL', tasks }))
+    tasksAPI
+      .getAll()
+      .then((severTasks) => dispatch({ type: 'SET_ALL', tasks: severTasks }))
   }, [])
 
   const filteredTasks = useMemo(() => {

@@ -78,6 +78,15 @@
   width: 100%;
   pointer-events: none;
 }
+.link {
+  color: inherit;
+  text-decoration: none;
+  width: 100%;
+
+  &:visited {
+    color: inherit;
+  }
+}
 
 .deleteButton {
   flex-shrink: 0;
